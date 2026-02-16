@@ -35,10 +35,14 @@ ARCHITECTURE behaviour OF memory_tb IS
     signal readdata: STD_LOGIC_VECTOR (7 DOWNTO 0);
     signal waitrequest: STD_LOGIC;
 
+    -- control signal to end simulation
+    signal sim_finished: boolean:= false;
+
 BEGIN
 
     --dut => Device Under Test
     dut: memory GENERIC MAP(
+	    -- for testing purposes only use the first 15 addresses?
             ram_size => 15
                 )
                 PORT MAP(
@@ -53,10 +57,13 @@ BEGIN
 
     clk_process : process
     BEGIN
-        clk <= '0';
-        wait for clk_period/2;
-        clk <= '1';
-        wait for clk_period/2;
+	while not sim_finished loop
+        	clk <= '0';
+        	wait for clk_period/2;
+        	clk <= '1';
+        	wait for clk_period/2;
+	end loop;
+	wait;
     end process;
 
     test_process : process
@@ -67,17 +74,22 @@ BEGIN
         memwrite <= '1';
         
         --waits are NOT synthesizable and should not be used in a hardware design
-        wait until rising_edge(waitrequest);
+        wait until falling_edge(waitrequest);
         memwrite <= '0';
         memread <= '1';
-        wait until rising_edge(waitrequest);
+        wait until falling_edge(waitrequest);
         assert readdata = x"12" report "write unsuccessful" severity error;
         memread <= '0';
         wait for clk_period;
         address <= 12;memread <= '1';
-        wait until rising_edge(waitrequest);
+        wait until falling_edge(waitrequest);
         assert readdata = x"0c" report "write unsuccessful" severity error;
         memread <= '0';
+
+	report "All tests completed" severity note;
+
+	sim_finished <= true;
+
         wait;
 
     END PROCESS;
