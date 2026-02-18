@@ -83,6 +83,7 @@ architecture arch of cache is
 	signal old_tag : std_logic_vector(TAG_SIZE-1 downto 0);
 	signal mem_addr_vec : std_logic_vector(14 downto 0);
 
+	
 
 begin
 
@@ -101,6 +102,7 @@ begin
 --------- FSM ----------------------------------------------------------------------------------------------
 	-- handles assigning the outputs
 	cache_process: process(clock, reset)
+	variable v_addr : std_logic_vector(14 downto 0);
 	begin
 		if reset = '1' then
 			-- TODO: handle logic, assign FSM state and output values, clear cache (?)
@@ -128,7 +130,6 @@ begin
                 end loop;
             end loop;
 		elsif rising_edge(clock) then
-			-- TODO: implement logic with FSM state names, assign outputs at each state
 			case state is
 				when IDLE => 
 					-- wait for request from CPU
@@ -142,8 +143,6 @@ begin
 					end if;
 				when CONTROL_CMP => 
 					if cache_hit = '1' then
-						-- TODO: handle logic
-
 						-- if read, read data from cache
 						if s_read = '1' then
 							s_readdata <= cache_data(addr_index)(addr_offset);
@@ -172,8 +171,9 @@ begin
 					m_read <= '0';
 			
 					--build memory address to send to MM
-					mem_addr_vec <= old_tag & std_logic_vector(to_unsigned(addr_index,5)) & std_logic_vector(to_unsigned(byte_count,4));
-					m_addr <= to_integer(unsigned(mem_addr_vec));
+					v_addr := old_tag & std_logic_vector(to_unsigned(addr_index,5)) & std_logic_vector(to_unsigned(byte_count,4));
+                    mem_addr_vec <= v_addr;
+                    m_addr <= to_integer(unsigned(v_addr));
 
 					-- for each word in that block, send each byte individually to write to MM
 					case byte_count is
@@ -207,8 +207,6 @@ begin
         					if byte_count = 15 then
             					byte_count <= 0;			-- reset byte count
             					cache_dirty(addr_index) <= '0';		-- reset dirty bit
-								--- ! do we need to deassert m_write here?
-								m_write <= '0';
             					state <= REPLACE_BLOCK;
         					else
             					byte_count <= byte_count + 1;
@@ -220,8 +218,9 @@ begin
 					m_write <= '0';
 					m_read <= '1';
 
-					mem_addr_vec <= addr_tag & std_logic_vector(to_unsigned(addr_index,5)) & std_logic_vector(to_unsigned(byte_count,4));
-                    m_addr <= to_integer(unsigned(mem_addr_vec));
+					v_addr := addr_tag & std_logic_vector(to_unsigned(addr_index,5)) & std_logic_vector(to_unsigned(byte_count,4));
+                    mem_addr_vec <= v_addr;
+                    m_addr <= to_integer(unsigned(v_addr));
 
 					if m_waitrequest = '0' then
 						m_read <= '0';
@@ -276,7 +275,7 @@ begin
 					state <= DONE;
 				when DONE =>
 					-- holding waitrequest low for a cycle according to avalon interface
-					-- s_waitrequest will have been set to in the previous cycle, will be set to high in the IDLE state
+					-- s_waitrequest will have been set to low in the previous cycle, will be set to high in the IDLE state
 					state <= IDLE;
 			end case;
 		end if;
