@@ -152,6 +152,11 @@ end procedure;
 begin
 -- put your tests here
 
+-- reset to init
+	reset <= '1';
+	wait until rising_edge(clk);
+	reset <= '0';
+
 -- Case 1: Writting to a not valid, clean block with no tag match
 	write_test(x"00000000", x"beefcafe");
 
@@ -170,6 +175,8 @@ begin
 
 --Case 4 : Reading a valid, dirty block without tag match
 	read_test(x"00008000");
+	-- !! we cant really assert m_write here since it is being toggled within the CPU logic....
+	-- instead we could probably just read it from memory ourselves directly and assert that value
 	Assert (m_write = '1')
 	Report "Error with case 4: we did not write the dirty block back into memory"
 	Severity ERROR;
@@ -190,6 +197,8 @@ begin
 
 --Case 7 : Reading a none valid, clean block without a tag match
 	read_test(x"00000100");
+	-- I think this is the same as case 4, I don't think we can assert m_write in the tests.
+	-- this test should be changed as well
 	Assert (m_write = '1')
 	Report "Error with case 7: we aren't checking memory for a block we haven't accessed yet"
 	Severity ERROR;
