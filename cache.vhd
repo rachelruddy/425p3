@@ -105,7 +105,6 @@ begin
 	variable v_addr : std_logic_vector(14 downto 0);
 	begin
 		if reset = '1' then
-			-- TODO: handle logic, assign FSM state and output values, clear cache (?)
 			state <= IDLE;
 
 			s_waitrequest <= '1';
