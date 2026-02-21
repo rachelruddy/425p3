@@ -118,7 +118,6 @@ test_process : process
 procedure read_test( addr : in std_logic_vector(31 downto 0)) is
 begin
 	s_addr <= addr;  --setting up the signals needed
-	wait until rising_edge(clk);
 	s_read <= '1';
 	s_write <= '0';
 
@@ -137,7 +136,6 @@ procedure write_test(
 		data : in std_logic_vector(31 downto 0)) is
 begin
 	s_addr <= addr;  --setting up the signals needed
-	wait until rising_edge(clk);
 	s_writedata <= data;
 	s_read <= '0';
 	s_write <= '1';
@@ -153,12 +151,6 @@ end procedure;
 
 begin
 -- put your tests here
-
--- reset to init
-	reset <= '1';
-	wait until rising_edge(clk);
-	reset <= '0';
-	wait until rising_edge(clk);
 
 -- Case 1: Writting to a not valid, clean block with no tag match
 	write_test(x"00000000", x"beefcafe");
@@ -177,14 +169,14 @@ begin
 	Severity ERROR;
 
 --Case 4 : Reading a valid, dirty block without tag match
-	-- read_test(x"00008000");
-	-- -- !!!!!!!!!!!!!! we cant really assert m_write here since it is being toggled within the CPU logic....
-	-- -- instead we could probably just read it from memory ourselves directly and assert that value
-	-- Assert (m_write = '1')
-	-- Report "Error with case 4: we did not write the dirty block back into memory"
-	-- Severity ERROR;
+	read_test(x"00008000");
+	read_test(x"00000000");
+	Assert (s_readdata = x"deadbeef")
+	Report "Error with case 4: we did not write the dirty block back into memory"
+	Severity ERROR;
 
 --Case 5 : Writing to a valid, clean block without tag match
+	read_test(x"00008000");
 	write_test(x"00000000", x"beefcafe");
 	read_test(x"00000000");
 	Assert (s_readdata = x"beefcafe")
@@ -192,53 +184,47 @@ begin
 	Severity ERROR;
 
 --Case 6 : Writing to a valid, dirty block without tag match
-	write_test(x"00000200", x"10101010");
-    read_test(x"00000200");
-    Assert (s_readdata = x"10101010")
-    Report "Error with case 6. Writing to a valid, dirty block without tag match."
-    Severity ERROR;
+	write_test(x"00008000", x"10101010");
+	read_test(x"00008000");
+	Assert (s_readdata = x"10101010")
+	Report "Error with case 6. Writing to a valid, dirty block without tag match."
+	Severity ERROR;
 
 --Case 7 : Reading a none valid, clean block without a tag match
-	-- read_test(x"00000100");
-	-- -- !!!!!!!!!! I think this is the same as case 4, I don't think we can assert m_write in the tests.
-	-- -- this test should be changed as well
-	-- Assert (m_write = '1')
-	-- Report "Error with case 7: we aren't checking memory for a block we haven't accessed yet"
-	-- Severity ERROR;
+	read_test(x"00000100");
+	Assert (m_write = '1')
+	Report "Error with case 7: we aren't checking memory for a block we haven't accessed yet"
+	Severity ERROR;
 
 --Case 8 : Reading a valid, clean without a tag match
-	read_test(x"00000300");
-    read_test(x"00000200");
-    Assert (s_readdata = x"10101010")
-    Report "Error with case 8. Reading a valid, clean without a tag match."
-    Severity ERROR;
+	read_test(x"00008100");
+	read_test(x"00008000");
+	Assert (s_readdata = x"10101010")
+	Report "Error with case 8. Reading a valid, clean without a tag match."
+	Severity ERROR;
 
 --Case 9 : Reading a valid clean block with a tag match
-	read_test(x"00000200");
-    Assert (s_readdata = x"10101010")
-    Report "Error with case 9. Reading a valid clean block with a tag match."
-    Severity ERROR;
+	read_test(x"00008000");
+	Assert (s_readdata = x"10101010")
+	Report "Error with case 9. Reading a valid clean block with a tag match."
+	Severity ERROR;
 
 --Case 10 : Writing to a a valid clean block with a tag match
-	write_test(x"00000200", x"abbacafe");
-    read_test(x"00000200");
-    Assert (s_readdata = x"abbacafe")
-    Report "Error with case 10. Writing to a a valid clean block with a tag match."
-    Severity ERROR;
+	write_test(x"00008000", x"abbacafe");
+	read_test(x"00008000");
+	Assert (s_readdata = x"abbacafe")
+	Report "Error with case 10. Writing to a a valid clean block with a tag match."
+	Severity ERROR;
 
 --Case 11 : Reading a none valid, clean block with a tag match
---!!!!!!!!!!! not sure why this is failing, should be looked at
 	write_test(x"00000100", x"beefcab5");
+	read_test(x"00008100");
+	read_test(x"00000100");
 
-    read_test(x"00000300");
-
-    wait until rising_edge(clk);
 --The only way I could figure out how have it not valid but still have a tag match was to reset the cache so thats what im doing but if reset also resets the values in memeory i dont know what im doing
 	reset <= '1';
-	-- !! maybe we should wait until rising edge here
-	wait until rising_edge(clk);
+	wait for 20 ns;
 	reset <= '0';
-    wait until rising_edge(clk);
 
 	read_test(x"00000100");
 	Assert (s_readdata = x"beefcab5")
@@ -246,11 +232,24 @@ begin
 	Severity ERROR;
 
 --Case 12 : Writing a none valid block with a tag match
-	write_test(x"00000200", x"12345678");
-    read_test(x"00000200");
-    Assert (s_readdata = x"12345678")
-    Report "Error with case 12. Writing a none valid block with a tag match."
-    Severity ERROR;
+	write_test(x"00008000", x"12345678");
+	read_test(x"00008000");
+	Assert (s_readdata = x"12345678")
+	Report "Error with case 10. Writing a none valid block with a tag match."
+	Severity ERROR;
+
+--Case 7 : Reading a none valid, clean block without a tag match
+	read_test(x"00000000");
+
+	reset <= '1';
+	wait for 20 ns;
+	reset <= '0';
+
+	read_test(x"00008000");
+	Assert (s_readdata = x"12345678")
+	Report "Error with case 7. Writing a none valid block with a tag match."
+	Severity ERROR;
+	
 
 
 	Report "Yay !!! All the test cases are done. If no errors poped up it means we got this (or my testbench is messed up)";
