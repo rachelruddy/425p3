@@ -177,14 +177,14 @@ begin
 	Severity ERROR;
 
 --Case 4 : Reading a valid, dirty block without tag match
-	-- read_test(x"00008000");
-	-- -- !!!!!!!!!!!!!! we cant really assert m_write here since it is being toggled within the CPU logic....
-	-- -- instead we could probably just read it from memory ourselves directly and assert that value
-	-- Assert (m_write = '1')
-	-- Report "Error with case 4: we did not write the dirty block back into memory"
-	-- Severity ERROR;
+	read_test(x"00000200");
+	read_test(x"00000000");
+	Assert (s_readdata = x"deadbeef")
+	Report "Error with case 4: we did not write the dirty block back into memory"
+	Severity ERROR;
 
 --Case 5 : Writing to a valid, clean block without tag match
+	read_test(x"00000200");
 	write_test(x"00000000", x"beefcafe");
 	read_test(x"00000000");
 	Assert (s_readdata = x"beefcafe")
@@ -251,6 +251,21 @@ begin
     Assert (s_readdata = x"12345678")
     Report "Error with case 12. Writing a none valid block with a tag match."
     Severity ERROR;
+
+--Case 7 : Reading a none valid, clean block without a tag match
+	read_test(x"00000000");
+
+	 wait until rising_edge(clk);
+	reset <= '1';
+	-- !! maybe we should wait until rising edge here
+	wait until rising_edge(clk);
+	reset <= '0';
+    wait until rising_edge(clk);
+
+	read_test(x"00000200");
+	Assert (s_readdata = x"12345678")
+	Report "Error with case 7. Writing a none valid block with a tag match."
+	Severity ERROR;
 
 
 	Report "Yay !!! All the test cases are done. If no errors poped up it means we got this (or my testbench is messed up)";
