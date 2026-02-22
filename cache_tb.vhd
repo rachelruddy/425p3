@@ -281,6 +281,7 @@ begin
 	Severity ERROR;
 
 
+
 	Report "Yay !!! All the test cases are done. If no errors poped up it means we got this (or my testbench is messed up)";
 
     wait;
