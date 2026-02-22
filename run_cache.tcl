@@ -7,4 +7,4 @@ vsim -voptargs=+acc cache_tb
 
 add wave -r /*
 
-run 2000 ns
+run -all
