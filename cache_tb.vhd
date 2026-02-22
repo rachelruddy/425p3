@@ -189,6 +189,7 @@ begin
 
 --Case 5 : Writing to a valid, clean block without tag match
 	read_test(x"00000200");
+	read_test(x"00000200");
 	write_test(x"00000000", x"beefcafe");
 	read_test(x"00000000");
 	Assert (s_readdata = x"beefcafe")
