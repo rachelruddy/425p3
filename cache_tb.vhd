@@ -114,15 +114,27 @@ end process;
 
 test_process : process
 
+variable memory_checked : boolean := false; -- this variable is used to check if we are checking memory for a block we haven't accessed yet(see case 7)
+
 --This procedure reads the data at the given address for testing purposes
 procedure read_test( addr : in std_logic_vector(31 downto 0)) is
 begin
+
+	memory_checked := false;
+
 	s_addr <= addr;  --setting up the signals needed
 	s_read <= '1';
 	s_write <= '0';
 
 	wait until rising_edge(clk); --waiting until the cache is ready
 	while s_waitrequest = '1' loop
+
+		-- Checking if we are checking memory for a block we haven't accessed yet(see case 7)
+		
+		if m_read = '1' then
+			memory_checked := true;
+		end if;
+		
 		wait until rising_edge(clk);
 	end loop;
 
@@ -150,6 +162,7 @@ begin
 end procedure;
 
 begin
+
 -- put your tests here
     Report "Starting the test cases for the cache. If no errors pop up it means we got this (or my testbench is messed up)";
     reset <= '1';
@@ -189,7 +202,6 @@ begin
 
 --Case 5 : Writing to a valid, clean block without tag match
 	read_test(x"00000200");
-	read_test(x"00000200");
 	write_test(x"00000000", x"beefcafe");
 	read_test(x"00000000");
 	Assert (s_readdata = x"beefcafe")
@@ -209,7 +221,7 @@ begin
 
 --Case 7 : Reading a none valid, clean block without a tag match
 	read_test(x"00000100");
-	Assert (m_read = '0' AND m_write = '0')
+	Assert (memory_checked = true)
 	Report "Error with case 7: we aren't checking memory for a block we haven't accessed yet"
 	Severity ERROR;
 
