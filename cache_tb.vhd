@@ -228,9 +228,10 @@ begin
     Report "Case 7 is done--------------------------------------";
 
 --Case 8 : Reading a valid, clean without a tag match
-	read_test(x"00000300");
+	read_test(x"00000000");
 	read_test(x"00000200");
-	Assert (s_readdata = x"10101010")
+	read_test(x"00000000");
+	Assert (s_readdata = x"beefcafe")
 	Report "Error with case 8. Reading a valid, clean without a tag match."
 	Severity ERROR;
 
@@ -270,16 +271,16 @@ begin
 
     Report "Case 11 is done--------------------------------------";
 
---Case 12 : Writing a none valid block with a tag match
+--Case 12 : Writing an ivalid block with a tag match
 	write_test(x"00000200", x"12345678");
 	read_test(x"00000200");
 	Assert (s_readdata = x"12345678")
-	Report "Error with case 12. Writing a none valid block with a tag match."
+	Report "Error with case 12. Writing an invalid block with a tag match."
 	Severity ERROR;
 
     Report "Case 12 done--------------------------------------";
 
---Case 7 : Reading a none valid, clean block without a tag match
+--Case 7 : Reading an invalid, clean block without a tag match
 
     read_test(x"00000600");
 
@@ -290,7 +291,7 @@ begin
 
 	read_test(x"00000200");
 	Assert (s_readdata = x"12345678")
-	Report "Error with case 7. Writing a none valid block with a tag match."
+	Report "Error with case 7. Writing an invalid block with a tag match."
 	Severity ERROR;
 
 
